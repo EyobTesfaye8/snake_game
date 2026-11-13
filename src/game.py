@@ -6,6 +6,96 @@ from pygame.math import Vector2 as V
 CELL_SIZE = 30
 CELL_NUMBER = 50
 WIDTH = HEIGHT = CELL_NUMBER * CELL_SIZE
+class AI:
+    def __init__(self):
+        pygame.init()
+        self.screen = pygame.display.set_mode((HEIGHT, WIDTH))
+        self.clock = pygame.time.Clock()
+        self.sprites = pygame.sprite.Group()
+        self.gameOver = False
+        self.reset()
+            
+
+    def playStep(self, action):
+        reward = 0
+        self.iter += 1
+        # print(self.iter)
+        for event in pygame.event.get():
+            if event == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_UP:
+                    self.snake.change_direction((0, -1))
+                elif event.key == pygame.K_DOWN:
+                    self.snake.change_direction((0, 1))
+                elif event.key == pygame.K_LEFT:
+                    self.snake.change_direction((-1, 0))
+                elif event.key == pygame.K_RIGHT:
+                    self.snake.change_direction((1, 0))
+
+        old_position = V(self.snake.body[0].x * CELL_SIZE, self.snake.body[0].y * CELL_SIZE)
+        # print(old_position)
+
+        self.snake.act(action) # move snake
+        # self.keyMove()
+        self.snake.update()
+
+        new_position = V(self.snake.body[0].x * CELL_SIZE, self.snake.body[0].y * CELL_SIZE)
+
+        if self.snake.body[0]*CELL_SIZE == self.firut.pos:
+            self.snake.growing = True
+            self.score += 1
+            reward = 10
+            self.firut.spawn()
+            self.score_sprite.update_score(self.score)
+
+        if self.snake.checkCollision() or self.iter > 100 * len(self.snake.body):
+            self.gameOver = True
+            reward = -10
+            return reward, self.gameOver, self.score
+        
+        self.sprites.empty()
+        self.sprites.add(self.score_sprite)
+        self.sprites.add(self.firut)
+        for s in self.snake.sprites:
+            self.sprites.add(s)
+        
+        self.screen.fill("#489000")
+        self.sprites.update()
+        self.sprites.draw(self.screen)
+        pygame.display.update()
+        self.clock.tick(15)
+        reward += self.rewardByDistance(old_position, new_position)
+        print(reward)
+
+        return reward, self.gameOver, self.score
+
+    def reset(self):
+        self.sprites.empty()
+        self.score = 0
+        self.score_sprite = ScoreSprite(WIDTH - 50, 50)
+        self.score_sprite.update_score(self.score)
+        self.iter = 0
+        self.snake = Snake()
+        self.firut = Apple()
+        self.sprites.add(self.firut)
+        for s in self.snake.sprites:
+            self.sprites.add(s)
+        self.sprites.add(self.score_sprite)
+        self.gameOver = False
+
+    def rewardByDistance(self, old:V, new:V):
+        old_distance = abs(old.distance_to(self.firut.pos))
+        new_distance = abs(new.distance_to(self.firut.pos))
+        print(new_distance, old_distance)
+        if new_distance < old_distance:
+            return 0.2
+        elif new_distance > old_distance:
+            return -0.2
+        else: return 0
+            
+    
 class Segment(pygame.sprite.Sprite):
     def __init__(self, x, y, type):
         super().__init__()
@@ -48,7 +138,7 @@ class Segment(pygame.sprite.Sprite):
 class Snake(pygame.sprite.Sprite):
     def __init__(self):
         super().__init__()
-        self.body = [V(30, 30), V(30,31), V(30,32)]
+        self.body = [V(22, 30), V(21,30), V(20,30)]
         self.dirc = V(1,0)
         self.growing = False
 
@@ -129,12 +219,11 @@ class Snake(pygame.sprite.Sprite):
             self.dirc = new_dir
     
     def act(self, action):
-        if action == "straight":
-            pass
-        elif action == "right":
+        if action == "right":
             self.dirc = self.dirc.rotate(90)
         elif action == "left":
             self.dirc = self.dirc.rotate(-90)
+
 class Apple(pygame.sprite.Sprite):
     def __init__(self):
         super().__init__()
@@ -148,57 +237,21 @@ class Apple(pygame.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.rect.center = self.pos
 
-def check_eat(firut, head):
-    if head*CELL_SIZE == firut.pos:
-        firut.spawn()
-        return True
-    return False
+class ScoreSprite(pygame.sprite.Sprite):
 
+  def __init__(self, x, y):
+    super().__init__()
+    self.font = pygame.font.Font(None, 50)
+    self.x = x
+    self.y = y
+    self.update_score(0)  # Initialize with score 0
 
-pygame.init()
-screen = pygame.display.set_mode((HEIGHT, WIDTH))
-clock = pygame.time.Clock()
-firut = Apple()
-snake = Snake()
+  def update_score(self, score):
+    # Render the text surface
+    self.image = self.font.render(f"Score: {score}", False, (255, 255, 255))
+    self.rect = self.image.get_rect()
+    # Position it at the top-right corner coordinates
+    self.rect.topright = (self.x, self.y)
 
-gameOver = False
-
-sprites = pygame.sprite.Group()
-sprites.add(firut)
-for s in snake.sprites:
-    sprites.add(s)
-
-
-while True:
-    for event in pygame.event.get():
-        if event == pygame.QUIT:
-            pygame.quit()
-            sys.exit()
-        elif event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_LEFT:
-                snake.act("left")
-            elif event.key == pygame.K_RIGHT:
-                snake.act("right")
-    snake.update()
-    gameOver = snake.checkCollision()
-    if check_eat(firut, snake.body[0]):
-        snake.growing = True
-    if gameOver:
-        sprites.empty()
-        snake = Snake()
-        firut = Apple()
-        sprites.add(firut)
-        for s in snake.sprites:
-            sprites.add(s)
-        gameOver = False
-    
-    sprites.empty()
-    sprites.add(firut)
-    for s in snake.sprites:
-        sprites.add(s)
-    screen.fill("#489000")
-    sprites.update()
-    sprites.draw(screen)
-    pygame.display.update()
-    clock.tick(15)
-
+# game = AI()
+# game.playStep("right")
