@@ -7,11 +7,13 @@ CELL_SIZE = 50
 CELL_NUMBER = 30
 WIDTH = HEIGHT = CELL_NUMBER * CELL_SIZE
 class AI:
-    def __init__(self):
-        pygame.init()
-        self.screen = pygame.display.set_mode((HEIGHT, WIDTH))
-        self.clock = pygame.time.Clock()
-        self.sprites = pygame.sprite.Group()
+    def __init__(self, render=True):
+        self.render = render
+        if render:
+            pygame.init()
+            self.screen = pygame.display.set_mode((HEIGHT, WIDTH))
+            self.clock = pygame.time.Clock()
+            self.sprites = pygame.sprite.Group()
         self.gameOver = False
         self.reset()
             
@@ -20,19 +22,20 @@ class AI:
         reward = 0
         self.iter += 1
         # print(self.iter)
-        for event in pygame.event.get():
-            if event == pygame.QUIT:
-                pygame.quit()
-                sys.exit()
-            elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_UP:
-                    self.snake.change_direction((0, -1))
-                elif event.key == pygame.K_DOWN:
-                    self.snake.change_direction((0, 1))
-                elif event.key == pygame.K_LEFT:
-                    self.snake.change_direction((-1, 0))
-                elif event.key == pygame.K_RIGHT:
-                    self.snake.change_direction((1, 0))
+        if self.render:
+            for event in pygame.event.get():
+                if event == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit()
+                elif event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_UP:
+                        self.snake.change_direction((0, -1))
+                    elif event.key == pygame.K_DOWN:
+                        self.snake.change_direction((0, 1))
+                    elif event.key == pygame.K_LEFT:
+                        self.snake.change_direction((-1, 0))
+                    elif event.key == pygame.K_RIGHT:
+                        self.snake.change_direction((1, 0))
 
         old_position = V(self.snake.body[0].x * CELL_SIZE, self.snake.body[0].y * CELL_SIZE)
         # print(old_position)
@@ -47,42 +50,44 @@ class AI:
             self.score += 1
             reward = 10
             self.firut.spawn()
-            self.score_sprite.update_score(self.score)
+            if self.render:
+                self.score_sprite.update_score(self.score)
 
         if self.snake.checkCollision() or self.iter > 100 * len(self.snake.body):
             self.gameOver = True
-            reward = -10
+            reward = -20
             return reward, self.gameOver, self.score
         
-        self.sprites.empty()
-        self.sprites.add(self.score_sprite)
-        self.sprites.add(self.firut)
-        for s in self.snake.sprites:
-            self.sprites.add(s)
-        
-        self.screen.fill("#489000")
-        self.sprites.update()
-        self.sprites.draw(self.screen)
-        pygame.display.update()
-        self.clock.tick(180)
+        if self.render:
+            self.sprites.empty()
+            self.sprites.add(self.score_sprite)
+            self.sprites.add(self.firut)
+            for s in self.snake.sprites:
+                self.sprites.add(s)
+            self.screen.fill("#489000")
+            self.sprites.update()
+            self.sprites.draw(self.screen)
+            pygame.display.update()
+            self.clock.tick(15)
         reward += self.rewardByDistance(old_position, new_position)
         # print(reward)
 
         return reward, self.gameOver, self.score
 
     def reset(self):
-        self.sprites.empty()
+        self.snake = Snake(render=self.render)
+        self.firut = Apple(render=self.render)
         self.score = 0
-        self.score_sprite = ScoreSprite(WIDTH - 50, 50)
-        self.score_sprite.update_score(self.score)
-        self.iter = 0
-        self.snake = Snake()
-        self.firut = Apple()
-        self.sprites.add(self.firut)
-        for s in self.snake.sprites:
-            self.sprites.add(s)
-        self.sprites.add(self.score_sprite)
         self.gameOver = False
+        self.iter = 0
+        if self.render:
+            self.score_sprite = ScoreSprite(WIDTH - 50, 50)
+            self.sprites.empty()
+            self.score_sprite.update_score(self.score)
+            self.sprites.add(self.firut)
+            for s in self.snake.sprites:
+                self.sprites.add(s)
+            self.sprites.add(self.score_sprite)
 
     def rewardByDistance(self, old:V, new:V):
         old_distance = abs(old.distance_to(self.firut.pos))
@@ -93,11 +98,9 @@ class AI:
         elif new_distance > old_distance:
             return -0.2
         else: return 0
-    def is_collision(pos1, dirc):
-        pass
 
     def get_state(self):
-        head = self.snake.body[0] * CELL_SIZE
+        head = self.snake.body[0]
         firut = self.firut.pos
         
         # danger_s,r,l, moving_r,l,u,d, food_r,l,u,d
@@ -111,13 +114,13 @@ class AI:
         md = 1 if self.snake.dirc == (0,1) else 0
         mu = 1 if self.snake.dirc == (0,-1) else 0
 
-        food = firut - head
+        food = firut - head * CELL_SIZE
         fr = 1 if food.x > 0 else 0
         fl = 1 if food.x < 0 else 0
         fu = 1 if food.y < 0 else 0
         fd = 1 if food.y > 0 else 0
-
-        return [ds,dr,dl,mr,ml,md,mu,fr,fl,fu,fd]
+        state = [ds,dr,dl,mr,ml,md,mu,fr,fl,fu,fd]
+        return state
     
 class Segment(pygame.sprite.Sprite):
     def __init__(self, x, y, type):
@@ -159,26 +162,29 @@ class Segment(pygame.sprite.Sprite):
         self.rect.center = self.pos
 
 class Snake(pygame.sprite.Sprite):
-    def __init__(self):
+    def __init__(self, render=True):
         super().__init__()
+        self.render = render
         self.body = [V((CELL_NUMBER // 2), CELL_NUMBER // 2), V((CELL_NUMBER // 2) - 1, CELL_NUMBER // 2), V((CELL_NUMBER // 2) - 2, CELL_NUMBER // 2)]
         self.dirc = V(1,0)
         self.growing = False
+        if self.render:
 
-        self.sprites = pygame.sprite.Group()
-        self.rebuild()
+            self.sprites = pygame.sprite.Group()
+            self.rebuild()
 
     def rebuild(self):
-        self.sprites.empty()
-        for i, pos in enumerate(self.body):
-            if i == 0:
-                type = self.getType(self.body[i + 1], pos, None, i)
-            elif len(self.body)-1 == i:
-                type = self.getType(None, pos, self.body[i - 1], -1)
-            else: 
-                type = self.getType(self.body[i+1], pos, self.body[i-1], 1)
-            segment = Segment(pos[0], pos[1], type)
-            self.sprites.add(segment)
+        if self.render:
+            self.sprites.empty()
+            for i, pos in enumerate(self.body):
+                if i == 0:
+                    type = self.getType(self.body[i + 1], pos, None, i)
+                elif len(self.body)-1 == i:
+                    type = self.getType(None, pos, self.body[i - 1], -1)
+                else: 
+                    type = self.getType(self.body[i+1], pos, self.body[i-1], 1)
+                segment = Segment(pos[0], pos[1], type)
+                self.sprites.add(segment)
         
     def update(self):
         head_x, head_y = self.body[0]
@@ -233,8 +239,10 @@ class Snake(pygame.sprite.Sprite):
         if pos: h = pos
         else: h = self.body[0]
         if h.x < 0 or h.x > CELL_NUMBER or h.y < 0 or h.y > CELL_NUMBER:
+            # print("border")
             return True
         if h in self.body[1:]:
+            # print("body")
             return True
         return False
 
@@ -249,17 +257,19 @@ class Snake(pygame.sprite.Sprite):
             self.dirc = self.dirc.rotate(-90)
 
 class Apple(pygame.sprite.Sprite):
-    def __init__(self):
+    def __init__(self, render):
         super().__init__()
+        self.render = render
         self.spawn()
     def spawn(self):
         self.x = random.randint(0, CELL_NUMBER - 1) * CELL_SIZE
         self.y = random.randint(0, CELL_NUMBER - 1) * CELL_SIZE
         self.pos = V(self.x,self.y)
-        image = pygame.image.load("assets/apple.png").convert_alpha()
-        self.image = pygame.transform.scale(image, (CELL_SIZE,CELL_SIZE))
-        self.rect = self.image.get_rect()
-        self.rect.center = self.pos
+        if self.render:
+            image = pygame.image.load("assets/apple.png").convert_alpha()
+            self.image = pygame.transform.scale(image, (CELL_SIZE,CELL_SIZE))
+            self.rect = self.image.get_rect()
+            self.rect.center = self.pos
 
 class ScoreSprite(pygame.sprite.Sprite):
 

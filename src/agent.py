@@ -8,6 +8,7 @@ class Agent():
     def __init__(self):
         self.memory = deque(maxlen=100000)
         self.trainer = DQNTrainer()
+        self.trainer.load()
         self.n_games = 0
     
     def get_state(self, game:AI):
@@ -17,6 +18,8 @@ class Agent():
 
     def get_action(self, state):
         epsilon = max(0.01, 1.0 - (self.n_games / 100))
+        # epsilon = 0.01
+        # print(self.n_games)
         action = self.trainer.select_action(state, epsilon)
         return action
     
