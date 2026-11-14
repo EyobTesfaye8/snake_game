@@ -3,8 +3,8 @@ import pygame
 import random
 from pygame.math import Vector2 as V
 
-CELL_SIZE = 30
-CELL_NUMBER = 50
+CELL_SIZE = 50
+CELL_NUMBER = 30
 WIDTH = HEIGHT = CELL_NUMBER * CELL_SIZE
 class AI:
     def __init__(self):
@@ -36,7 +36,6 @@ class AI:
 
         old_position = V(self.snake.body[0].x * CELL_SIZE, self.snake.body[0].y * CELL_SIZE)
         # print(old_position)
-
         self.snake.act(action) # move snake
         # self.keyMove()
         self.snake.update()
@@ -65,9 +64,9 @@ class AI:
         self.sprites.update()
         self.sprites.draw(self.screen)
         pygame.display.update()
-        self.clock.tick(15)
+        self.clock.tick(180)
         reward += self.rewardByDistance(old_position, new_position)
-        print(reward)
+        # print(reward)
 
         return reward, self.gameOver, self.score
 
@@ -88,13 +87,37 @@ class AI:
     def rewardByDistance(self, old:V, new:V):
         old_distance = abs(old.distance_to(self.firut.pos))
         new_distance = abs(new.distance_to(self.firut.pos))
-        print(new_distance, old_distance)
+        # print(new_distance, old_distance)
         if new_distance < old_distance:
             return 0.2
         elif new_distance > old_distance:
             return -0.2
         else: return 0
-            
+    def is_collision(pos1, dirc):
+        pass
+
+    def get_state(self):
+        head = self.snake.body[0] * CELL_SIZE
+        firut = self.firut.pos
+        
+        # danger_s,r,l, moving_r,l,u,d, food_r,l,u,d
+
+        ds = 1 if self.snake.checkCollision(head + self.snake.dirc) else 0
+        dr = 1 if self.snake.checkCollision(head + self.snake.dirc.rotate(90)) else 0
+        dl = 1 if self.snake.checkCollision(head + self.snake.dirc.rotate(-90)) else 0
+
+        mr = 1 if self.snake.dirc == (1,0) else 0
+        ml = 1 if self.snake.dirc == (-1,0) else 0
+        md = 1 if self.snake.dirc == (0,1) else 0
+        mu = 1 if self.snake.dirc == (0,-1) else 0
+
+        food = firut - head
+        fr = 1 if food.x > 0 else 0
+        fl = 1 if food.x < 0 else 0
+        fu = 1 if food.y < 0 else 0
+        fd = 1 if food.y > 0 else 0
+
+        return [ds,dr,dl,mr,ml,md,mu,fr,fl,fu,fd]
     
 class Segment(pygame.sprite.Sprite):
     def __init__(self, x, y, type):
@@ -138,7 +161,7 @@ class Segment(pygame.sprite.Sprite):
 class Snake(pygame.sprite.Sprite):
     def __init__(self):
         super().__init__()
-        self.body = [V(22, 30), V(21,30), V(20,30)]
+        self.body = [V((CELL_NUMBER // 2), CELL_NUMBER // 2), V((CELL_NUMBER // 2) - 1, CELL_NUMBER // 2), V((CELL_NUMBER // 2) - 2, CELL_NUMBER // 2)]
         self.dirc = V(1,0)
         self.growing = False
 
@@ -206,8 +229,9 @@ class Snake(pygame.sprite.Sprite):
             elif type == "No Type": type = "bv"
         return type
 
-    def checkCollision(self):
-        h = self.body[0]
+    def checkCollision(self, pos = None):
+        if pos: h = pos
+        else: h = self.body[0]
         if h.x < 0 or h.x > CELL_NUMBER or h.y < 0 or h.y > CELL_NUMBER:
             return True
         if h in self.body[1:]:
@@ -219,9 +243,9 @@ class Snake(pygame.sprite.Sprite):
             self.dirc = new_dir
     
     def act(self, action):
-        if action == "right":
+        if action == 1:
             self.dirc = self.dirc.rotate(90)
-        elif action == "left":
+        elif action == 2:
             self.dirc = self.dirc.rotate(-90)
 
 class Apple(pygame.sprite.Sprite):
@@ -253,5 +277,3 @@ class ScoreSprite(pygame.sprite.Sprite):
     # Position it at the top-right corner coordinates
     self.rect.topright = (self.x, self.y)
 
-# game = AI()
-# game.playStep("right")
