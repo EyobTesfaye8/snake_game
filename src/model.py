@@ -21,7 +21,7 @@ class DQN(nn.Module):
 
 class DQNTrainer:
     """Encapsulates the policy network, target network, optimizer, and training logic."""
-    def __init__(self, state_dim=11, action_dim=3, lr=0.001, gamma=0.99):
+    def __init__(self, lr, state_dim=11, action_dim=3, gamma=0.99):
         self.state_dim = state_dim
         self.action_dim = action_dim
         self.gamma = gamma
@@ -95,11 +95,7 @@ class DQNTrainer:
         file_path = os.path.join(model_folder_path, file_name)
         
         if os.path.exists(file_path):
-            print("loaded")
             self.policy_net.load_state_dict(torch.load(file_path))
             self.target_net.load_state_dict(torch.load(file_path))
             self.policy_net.eval()
-            self.target_net.eval()
-            print(f"Loaded saved model from {file_path}")
-        else:
-            print("No saved model found. Starting fresh.")  # Returns Q-values, e.g., tensor([1.2, -0.4, 0.8])
+            self.target_net.eval() # Returns Q-values, e.g., tensor([1.2, -0.4, 0.8])

@@ -5,9 +5,9 @@ from src.model import DQNTrainer
 from collections import deque
 
 class Agent():
-    def __init__(self):
+    def __init__(self, lr):
         self.memory = deque(maxlen=100000)
-        self.trainer = DQNTrainer()
+        self.trainer = DQNTrainer(lr=lr)
         self.trainer.load()
         self.n_games = 0
     
@@ -17,9 +17,8 @@ class Agent():
         return state
 
     def get_action(self, state):
+        # epsilon = 0.0
         epsilon = max(0.01, 1.0 - (self.n_games / 100))
-        # epsilon = 0.01
-        # print(self.n_games)
         action = self.trainer.select_action(state, epsilon)
         return action
     

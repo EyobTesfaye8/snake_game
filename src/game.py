@@ -38,9 +38,7 @@ class AI:
                         self.snake.change_direction((1, 0))
 
         old_position = V(self.snake.body[0].x * CELL_SIZE, self.snake.body[0].y * CELL_SIZE)
-        # print(old_position)
         self.snake.act(action) # move snake
-        # self.keyMove()
         self.snake.update()
 
         new_position = V(self.snake.body[0].x * CELL_SIZE, self.snake.body[0].y * CELL_SIZE)
@@ -49,13 +47,13 @@ class AI:
             self.snake.growing = True
             self.score += 1
             reward = 10
-            self.firut.spawn()
+            self.firut.spawn(self.snake.body)
             if self.render:
                 self.score_sprite.update_score(self.score)
 
         if self.snake.checkCollision() or self.iter > 100 * len(self.snake.body):
             self.gameOver = True
-            reward = -20
+            reward = -10
             return reward, self.gameOver, self.score
         
         if self.render:
@@ -68,16 +66,18 @@ class AI:
             self.sprites.update()
             self.sprites.draw(self.screen)
             pygame.display.update()
-            self.clock.tick(15)
+            self.clock.tick(150)
         reward += self.rewardByDistance(old_position, new_position)
+
         # print(reward)
 
         return reward, self.gameOver, self.score
 
     def reset(self):
+        self.score = 0
+        self.record = 0
         self.snake = Snake(render=self.render)
         self.firut = Apple(render=self.render)
-        self.score = 0
         self.gameOver = False
         self.iter = 0
         if self.render:
@@ -94,9 +94,9 @@ class AI:
         new_distance = abs(new.distance_to(self.firut.pos))
         # print(new_distance, old_distance)
         if new_distance < old_distance:
-            return 0.2
+            return 0.1
         elif new_distance > old_distance:
-            return -0.2
+            return -0.1
         else: return 0
 
     def get_state(self):
@@ -261,10 +261,16 @@ class Apple(pygame.sprite.Sprite):
         super().__init__()
         self.render = render
         self.spawn()
-    def spawn(self):
-        self.x = random.randint(0, CELL_NUMBER - 1) * CELL_SIZE
-        self.y = random.randint(0, CELL_NUMBER - 1) * CELL_SIZE
-        self.pos = V(self.x,self.y)
+    def spawn(self, snake_body = None):
+        def randomPos():
+            x = random.randint(0, CELL_NUMBER - 1) * CELL_SIZE
+            y = random.randint(0, CELL_NUMBER - 1) * CELL_SIZE
+            pos = V(x,y)
+            return pos
+        self.pos = randomPos()
+        while snake_body and self.pos in snake_body:
+            self.pos = randomPos()
+        
         if self.render:
             image = pygame.image.load("assets/apple.png").convert_alpha()
             self.image = pygame.transform.scale(image, (CELL_SIZE,CELL_SIZE))
