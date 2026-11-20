@@ -6,15 +6,6 @@ import random
 import os
 from src.constants import *
 
-
-# ── direction tuple → which of the 4 direction channels to set ──
-_DIR_CHANNEL = {
-    (1,  0): 4,   # right
-    (-1, 0): 5,   # left
-    (0, -1): 6,   # up
-    (0,  1): 7,   # down
-}
-
 def grid_to_state(grid, direction):
     """
     Convert a 2D grid + direction into an 8-channel tensor.
@@ -26,17 +17,17 @@ def grid_to_state(grid, direction):
         ch 0-3  →  one-hot cell types
         ch 4-7  →  one-hot direction, broadcast across all cells
     """
-    grid = np.array(grid, dtype=np.int32)
+    grid = np.array(grid, dtype=np.int8)
     H, W = grid.shape
-    state = np.zeros((8, H, W), dtype=np.float32)
+    state = np.zeros((8, H, W), dtype=np.uint8)
 
     # Cell type channels
     for c in range(4):
-        state[c] = (grid == c).astype(np.float32)
+        state[c] = (grid == c).astype(np.uint8)
 
     # Direction channel (entire plane set to 1.0 for the active direction)
-    if direction in _DIR_CHANNEL:
-        state[_DIR_CHANNEL[direction]] = 1.0
+    if direction in DIR_CHANNEL:
+        state[DIR_CHANNEL[direction]] = 1
 
     return state  # (8, H, W)
 
