@@ -1,10 +1,10 @@
+import numpy as np
 import sys
 import pygame
 import random
 from pygame.math import Vector2 as V
+from src.constants import *
 
-CELL_SIZE = 50
-CELL_NUMBER = 30
 WIDTH = HEIGHT = CELL_NUMBER * CELL_SIZE
 class AI:
     def __init__(self, render=True):
@@ -43,7 +43,7 @@ class AI:
 
         new_position = V(self.snake.body[0].x * CELL_SIZE, self.snake.body[0].y * CELL_SIZE)
 
-        if self.snake.body[0]*CELL_SIZE == self.firut.pos:
+        if self.snake.body[0]*CELL_SIZE == self.firut.pos*CELL_SIZE:
             self.snake.growing = True
             self.score += 1
             reward = 10
@@ -90,36 +90,53 @@ class AI:
             self.sprites.add(self.score_sprite)
 
     def rewardByDistance(self, old:V, new:V):
-        old_distance = abs(old.distance_to(self.firut.pos))
-        new_distance = abs(new.distance_to(self.firut.pos))
+        old_distance = abs(old.distance_to(self.firut.pos * CELL_SIZE))
+        new_distance = abs(new.distance_to(self.firut.pos * CELL_SIZE))
         # print(new_distance, old_distance)
         if new_distance < old_distance:
-            return 0.1
+            return 0.2
         elif new_distance > old_distance:
-            return -0.1
+            return -0.2
         else: return 0
 
     def get_state(self):
-        head = self.snake.body[0]
+        np.set_printoptions(threshold=50000, linewidth=4*CELL_NUMBER)
         firut = self.firut.pos
+        state = np.zeros((CELL_NUMBER, CELL_NUMBER))
+        state[int(firut.x)][int(firut.y)] = 2
+        for i,seg in enumerate(self.snake.body):
+            if seg.x < CELL_NUMBER and seg.y < CELL_NUMBER:
+                if i == 0:
+                    state[int(seg.x)][int(seg.y)] = 3
+                state[int(seg.x)][int(seg.y)] = 1
+        if self.snake.dirc == (1,0):
+            dirc =DIRECTION['right']
+        elif self.snake.dirc == (-1,0):
+            dirc =DIRECTION['left']
+        elif self.snake.dirc == (0,1):
+            dirc =DIRECTION['down']
+        else:
+            dirc =DIRECTION['up']
         
-        # danger_s,r,l, moving_r,l,u,d, food_r,l,u,d
+        # # danger_s,r,l, moving_r,l,u,d, food_r,l,u,d
 
-        ds = 1 if self.snake.checkCollision(head + self.snake.dirc) else 0
-        dr = 1 if self.snake.checkCollision(head + self.snake.dirc.rotate(90)) else 0
-        dl = 1 if self.snake.checkCollision(head + self.snake.dirc.rotate(-90)) else 0
+        # ds = 1 if self.snake.checkCollision(head + self.snake.dirc) else 0
+        # dr = 1 if self.snake.checkCollision(head + self.snake.dirc.rotate(90)) else 0
+        # dl = 1 if self.snake.checkCollision(head + self.snake.dirc.rotate(-90)) else 0
 
-        mr = 1 if self.snake.dirc == (1,0) else 0
-        ml = 1 if self.snake.dirc == (-1,0) else 0
-        md = 1 if self.snake.dirc == (0,1) else 0
-        mu = 1 if self.snake.dirc == (0,-1) else 0
+        # mr = 1 if self.snake.dirc == (1,0) else 0
+        # ml = 1 if self.snake.dirc == (-1,0) else 0
+        # md = 1 if self.snake.dirc == (0,1) else 0
+        # mu = 1 if self.snake.dirc == (0,-1) else 0
 
-        food = firut - head * CELL_SIZE
-        fr = 1 if food.x > 0 else 0
-        fl = 1 if food.x < 0 else 0
-        fu = 1 if food.y < 0 else 0
-        fd = 1 if food.y > 0 else 0
-        state = [ds,dr,dl,mr,ml,md,mu,fr,fl,fu,fd]
+        # food = firut - head * CELL_SIZE
+        # fr = 1 if food.x > 0 else 0
+        # fl = 1 if food.x < 0 else 0
+        # fu = 1 if food.y < 0 else 0
+        # fd = 1 if food.y > 0 else 0
+        # state = [ds,dr,dl,mr,ml,md,mu,fr,fl,fu,fd]
+        state = np.append(state.flatten(), dirc)
+        
         return state
     
 class Segment(pygame.sprite.Sprite):
@@ -263,8 +280,8 @@ class Apple(pygame.sprite.Sprite):
         self.spawn()
     def spawn(self, snake_body = None):
         def randomPos():
-            x = random.randint(0, CELL_NUMBER - 1) * CELL_SIZE
-            y = random.randint(0, CELL_NUMBER - 1) * CELL_SIZE
+            x = random.randint(0, CELL_NUMBER - 1)
+            y = random.randint(0, CELL_NUMBER - 1)
             pos = V(x,y)
             return pos
         self.pos = randomPos()
@@ -275,7 +292,7 @@ class Apple(pygame.sprite.Sprite):
             image = pygame.image.load("assets/apple.png").convert_alpha()
             self.image = pygame.transform.scale(image, (CELL_SIZE,CELL_SIZE))
             self.rect = self.image.get_rect()
-            self.rect.center = self.pos
+            self.rect.center = self.pos * CELL_SIZE
 
 class ScoreSprite(pygame.sprite.Sprite):
 
@@ -292,4 +309,3 @@ class ScoreSprite(pygame.sprite.Sprite):
     self.rect = self.image.get_rect()
     # Position it at the top-right corner coordinates
     self.rect.topright = (self.x, self.y)
-

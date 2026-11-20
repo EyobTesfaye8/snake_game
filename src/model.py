@@ -8,15 +8,17 @@ class DQN(nn.Module):
     """The Neural Network architecture."""
     def __init__(self, state_dim, action_dim):
         super(DQN, self).__init__()
-        self.fc1 = nn.Linear(state_dim, 128)
         self.relu = nn.ReLU()
-        self.fc2 = nn.Linear(128, 256)
-        self.fc3 = nn.Linear(256, action_dim)  # Output layer: one Q-value per action
+        self.fc1 = nn.Linear(state_dim, 512)
+        self.fc2 = nn.Linear(512, 256)
+        self.fc3 = nn.Linear(256, 128)
+        self.fc4 = nn.Linear(128, action_dim)  # Output layer: one Q-value per action
 
     def forward(self, x):
         x = self.relu(self.fc1(x))
         x = self.relu(self.fc2(x))
-        return self.fc3(x)
+        x = self.relu(self.fc3(x))
+        return self.fc4(x)
 
 
 class DQNTrainer:
@@ -66,14 +68,14 @@ class DQNTrainer:
             target_q_values = rewards + (self.gamma * max_next_q_values * (1 - dones))
 
         # 3. Calculate Loss
-        loss = self.criterion(q_values, target_q_values)
+        self.loss = self.criterion(q_values, target_q_values)
 
         # 4. Backpropagation & Optimization
         self.optimizer.zero_grad()
-        loss.backward()
+        self.loss.backward()
         self.optimizer.step()
         
-        return loss.item()
+        return self.loss.item()
 
     def update_target_network(self):
         """Syncs the target network weights with the policy network."""

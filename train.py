@@ -34,16 +34,17 @@ def train(render, lr=0.001):
                     file.seek(0)
                     file.truncate(0)
                     file.write(f"{game.score}")
+            
             game.reset()
             agent.n_games += 1
             agent.train_long_memory()
-
+            loss = agent.get_loss()
 
             if score > record:
                 record = score
                 agent.trainer.save()
                 
-            print(f'Game {agent.n_games} | Score {score} | Record {record}')
+            print(f'Game {agent.n_games} | Score {score} | Record {record} | Loss: {loss}')
 
             plot_scores.append(score)
             total_score += score

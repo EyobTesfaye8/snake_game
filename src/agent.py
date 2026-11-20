@@ -3,11 +3,12 @@ import numpy as np
 from src.game import AI
 from src.model import DQNTrainer
 from collections import deque
+from src.constants import *
 
 class Agent():
     def __init__(self, lr):
         self.memory = deque(maxlen=100000)
-        self.trainer = DQNTrainer(lr=lr)
+        self.trainer = DQNTrainer(lr=lr, state_dim=CELL_NUMBER**2+1, action_dim=3)
         self.trainer.load()
         self.n_games = 0
     
@@ -17,7 +18,7 @@ class Agent():
         return state
 
     def get_action(self, state):
-        # epsilon = 0.0
+        # epsilon = 0.01
         epsilon = max(0.01, 1.0 - (self.n_games / 100))
         action = self.trainer.select_action(state, epsilon)
         return action
@@ -32,4 +33,7 @@ class Agent():
     
     def remember(self, old_state, new_state, action, reward, gameover):
         self.memory.append((old_state, new_state, action, reward, gameover))
+    
+    def get_loss(self):
+        return self.trainer.loss
     
