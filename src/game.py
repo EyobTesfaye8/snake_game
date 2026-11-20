@@ -45,6 +45,7 @@ class AI:
         new_position = V(self.snake.body[0].x * CELL_SIZE, self.snake.body[0].y * CELL_SIZE)
 
         if self.snake.body[0]*CELL_SIZE == self.firut.pos*CELL_SIZE:
+            self.iter = 0
             self.snake.growing = True
             self.score += 1
             reward = 10
@@ -52,7 +53,7 @@ class AI:
             if self.render:
                 self.score_sprite.update_score(self.score)
 
-        if self.snake.checkCollision() or self.iter > 100 * len(self.snake.body):
+        if self.snake.checkCollision() or self.iter > 1000:
             self.gameOver = True
             reward = -10
             return reward, self.gameOver, self.score
@@ -110,7 +111,7 @@ class AI:
 
         # Snake body + head
         for i, seg in enumerate(self.snake.body):
-            if seg.x < CELL_NUMBER and seg.y < CELL_NUMBER:
+            if 0 <= seg.x < CELL_NUMBER and 0 <= seg.y < CELL_NUMBER:
                 if i == 0:
                     grid[int(seg.x)][int(seg.y)] = 3  # head
                 else:

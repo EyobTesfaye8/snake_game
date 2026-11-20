@@ -19,12 +19,12 @@ class Agent():
 
     def get_action(self, state):
         # epsilon = 0.01
-        epsilon = max(0.01, 1.0 - (self.n_games / 100))
+        epsilon = max(0.01, 0.995 ** self.n_games)
         action = self.trainer.select_action(state, epsilon)
         return action
     
     def train_long_memory(self):
-        batch = random.sample(self.memory, 1000) if len(self.memory) > 1000 else self.memory
+        batch = random.sample(self.memory, 256) if len(self.memory) > 256 else self.memory
         return self.trainer.train_step(batch)
     
     def train_short_memory(self, old_state, new_state, action, reward, gameover):
