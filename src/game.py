@@ -4,6 +4,7 @@ import pygame
 import random
 from pygame.math import Vector2 as V
 from src.constants import *
+from src.model import grid_to_state
 
 WIDTH = HEIGHT = CELL_NUMBER * CELL_SIZE
 class AI:
@@ -99,25 +100,25 @@ class AI:
             return -0.2
         else: return 0
 
+
     def get_state(self):
-        np.set_printoptions(threshold=50000, linewidth=4*CELL_NUMBER)
+        grid = np.zeros((CELL_NUMBER, CELL_NUMBER), dtype=np.int32)
+
+        # Food
         firut = self.firut.pos
-        state = np.zeros((CELL_NUMBER, CELL_NUMBER))
-        state[int(firut.x)][int(firut.y)] = 2
-        for i,seg in enumerate(self.snake.body):
+        grid[int(firut.x)][int(firut.y)] = 2
+
+        # Snake body + head
+        for i, seg in enumerate(self.snake.body):
             if seg.x < CELL_NUMBER and seg.y < CELL_NUMBER:
                 if i == 0:
-                    state[int(seg.x)][int(seg.y)] = 3
-                state[int(seg.x)][int(seg.y)] = 1
-        if self.snake.dirc == (1,0):
-            dirc =DIRECTION['right']
-        elif self.snake.dirc == (-1,0):
-            dirc =DIRECTION['left']
-        elif self.snake.dirc == (0,1):
-            dirc =DIRECTION['down']
-        else:
-            dirc =DIRECTION['up']
-        
+                    grid[int(seg.x)][int(seg.y)] = 3  # head
+                else:
+                    grid[int(seg.x)][int(seg.y)] = 1  # body
+
+        # Direction tuple e.g. (1,0), (-1,0), (0,1), (0,-1)
+        state = grid_to_state(grid, (self.snake.dirc.x,self.snake.dirc.y))   # → (8, H, W)
+        return state
         # # danger_s,r,l, moving_r,l,u,d, food_r,l,u,d
 
         # ds = 1 if self.snake.checkCollision(head + self.snake.dirc) else 0
@@ -135,9 +136,6 @@ class AI:
         # fu = 1 if food.y < 0 else 0
         # fd = 1 if food.y > 0 else 0
         # state = [ds,dr,dl,mr,ml,md,mu,fr,fl,fu,fd]
-        state = np.append(state.flatten(), dirc)
-        
-        return state
     
 class Segment(pygame.sprite.Sprite):
     def __init__(self, x, y, type):

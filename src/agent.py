@@ -8,7 +8,7 @@ from src.constants import *
 class Agent():
     def __init__(self, lr):
         self.memory = deque(maxlen=100000)
-        self.trainer = DQNTrainer(lr=lr, state_dim=CELL_NUMBER**2+1, action_dim=3)
+        self.trainer = DQNTrainer(lr=lr, action_dim=3)
         self.trainer.load()
         self.n_games = 0
     
